@@ -1,0 +1,70 @@
+name: devops-observability
+
+services:
+
+  prometheus:
+    image: prom/prometheus:v3.12.0
+
+    restart: unless-stopped
+
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+
+    ports:
+      - "192.168.100.88:9090:9090"
+
+    volumes:
+      - "../../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z"
+      - "prometheus-data:/prometheus"
+
+    networks:
+      - observability-network
+
+  blackbox-exporter:
+    image: quay.io/prometheus/blackbox-exporter:v0.28.0
+
+    restart: unless-stopped
+
+    command:
+      - "--config.file=/config/blackbox.yml"
+
+    ports:
+      - "127.0.0.1:9115:9115"
+
+    volumes:
+      - "../../blackbox/blackbox.yml:/config/blackbox.yml:ro,Z"
+
+    networks:
+      - observability-network
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:v1.11.1
+
+    restart: unless-stopped
+
+    network_mode: host
+    pid: host
+
+    security_opt:
+      - "label=disable"
+
+    command:
+      - "--path.rootfs=/host"
+      - "--web.listen-address=192.168.100.88:9100"
+
+    volumes:
+      - "/:/host:ro,rslave"
+
+volumes:
+
+  prometheus-data:
+    name: devops-observability-prometheus-data
+
+networks:
+
+  observability-network:
+    name: devops-observability-network
+    driver: bridge

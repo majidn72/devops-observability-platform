@@ -4,15 +4,92 @@ global:
 
 scrape_configs:
 
+  # Prometheus monitors its own internal metrics.
   - job_name: "prometheus"
-    static_configs:
-      - targets:
-          - "localhost:9090"
 
-  - job_name: "node-exporter"
     static_configs:
       - targets:
-          - "192.168.100.87:9100"
-          - "192.168.100.88:9100"
+          - "prometheus:9090"
+
         labels:
           environment: "development"
+          service: "prometheus"
+          server_role: "observability"
+
+  # Host-level metrics from both virtual machines.
+  - job_name: "node-exporter"
+
+    static_configs:
+
+      - targets:
+          - "192.168.100.87:9100"
+
+        labels:
+          environment: "development"
+          host_name: "application-vm-01"
+          server_role: "application"
+
+      - targets:
+          - "192.168.100.88:9100"
+
+        labels:
+          environment: "development"
+          host_name: "observability-vm-01"
+          server_role: "observability"
+
+  # Internal metrics of Blackbox Exporter itself.
+  - job_name: "blackbox-exporter"
+
+    static_configs:
+      - targets:
+          - "blackbox-exporter:9115"
+
+        labels:
+          environment: "development"
+          service: "blackbox-exporter"
+
+  # Synthetic HTTP checks.
+  - job_name: "blackbox-http"
+
+    scrape_interval: 60s
+    scrape_timeout: 15s
+
+    metrics_path: /probe
+
+    params:
+      module:
+        - http_2xx
+
+    static_configs:
+
+      - targets:
+          - "https://example.com"
+
+        labels:
+          environment: "development"
+          target_name: "example-public-endpoint"
+          target_type: "external"
+
+      - targets:
+          - "https://www.digikala.com"
+
+        labels:
+          environment: "development"
+          target_name: "digikala-external-endpoint"
+          target_type: "external"
+
+    relabel_configs:
+
+      - source_labels:
+          - __address__
+
+        target_label: __param_target
+
+      - source_labels:
+          - __param_target
+
+        target_label: instance
+
+      - target_label: __address__
+
+        replacement: "blackbox-exporter:9115"
