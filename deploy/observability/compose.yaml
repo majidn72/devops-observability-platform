@@ -58,13 +58,61 @@ services:
     volumes:
       - "/:/host:ro,rslave"
 
+  grafana:
+    image: grafana/grafana:13.1.0
+
+    restart: unless-stopped
+
+    depends_on:
+      - prometheus
+
+    ports:
+      - "192.168.100.88:3000:3000"
+
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_admin_password
+      GF_SECURITY_SECRET_KEY__FILE: /run/secrets/grafana_secret_key
+
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+
+      GF_SECURITY_DISABLE_GRAVATAR: "true"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+
+      GF_SERVER_ENABLE_GZIP: "true"
+
+    secrets:
+      - grafana_admin_password
+      - grafana_secret_key
+
+    volumes:
+      - "grafana-data:/var/lib/grafana"
+      - "../../grafana/provisioning:/etc/grafana/provisioning:ro,Z"
+      - "../../grafana/dashboards:/etc/grafana/dashboards:ro,Z"
+
+    networks:
+      - observability-network
+
 volumes:
 
   prometheus-data:
     name: devops-observability-prometheus-data
+
+  grafana-data:
+    name: devops-observability-grafana-data
 
 networks:
 
   observability-network:
     name: devops-observability-network
     driver: bridge
+
+secrets:
+
+  grafana_admin_password:
+    file: ../../secrets/grafana_admin_password.txt
+
+  grafana_secret_key:
+    file: ../../secrets/grafana_secret_key.txt
