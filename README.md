@@ -34,7 +34,43 @@ Observability VM
 ├── Prometheus
 ├── Blackbox Exporter
 ├── Node Exporter
-└── Persistent Prometheus Storage
+├── Grafana
+├── Persistent Prometheus Storage
+└── Persistent Grafana Storage
+```
+
+## Current Data Flow
+
+### Infrastructure Monitoring
+
+```text
+Application VM Node Exporter
+              │
+              │ Host Metrics
+              ▼
+          Prometheus
+              │
+              │ PromQL Queries
+              ▼
+            Grafana
+```
+
+### Digikala Synthetic Monitoring
+
+```text
+Digikala Website
+        ↑
+        │ HTTP Synthetic Probe
+        │
+Blackbox Exporter
+        │
+        │ Probe Metrics
+        ▼
+    Prometheus
+        │
+        │ PromQL Queries
+        ▼
+      Grafana
 ```
 
 ## Current Components
@@ -42,13 +78,17 @@ Observability VM
 * Prometheus
 * Node Exporter
 * Blackbox Exporter
+* Grafana
 * Docker Compose
+* Docker Compose Secrets
 * Persistent Docker Volumes
+* Provisioned Prometheus data source
+* Provisioned Digikala dashboard
 
 ## Planned Components
 
-* Grafana
 * Alertmanager
+* Demo Application
 * OpenTelemetry SDK
 * OpenTelemetry Collector
 * Grafana Tempo
@@ -57,12 +97,14 @@ Observability VM
 * Elasticsearch
 * Kibana
 * Nginx Reverse Proxy
-* HTTPS and Authentication
+* HTTPS
+* Role-based access
 * CI/CD Pipeline
+* VPS Deployment
 
 ## Synthetic Monitoring
 
-The platform performs HTTP synthetic checks against external endpoints.
+The platform performs scheduled HTTP synthetic checks against external endpoints.
 
 ### Primary Target
 
@@ -76,7 +118,9 @@ https://www.digikala.com
 https://example.com
 ```
 
-The control target is used only to validate the Prometheus and Blackbox Exporter configuration.
+Digikala is the primary monitoring target of this project.
+
+The `example.com` endpoint is used only as a control target to validate the Prometheus and Blackbox Exporter configuration.
 
 ## Current Metrics
 
@@ -86,21 +130,42 @@ The control target is used only to validate the Prometheus and Blackbox Exporter
 * `probe_http_status_code`
 * `probe_http_duration_seconds`
 
-## Environment
+## Grafana Dashboard
+
+The version-controlled Digikala dashboard currently displays:
+
+* Current probe status
+* HTTP status code
+* 24-hour availability
+* Current probe duration
+* Probe duration history
+* HTTP phase duration
+
+Grafana authentication is enabled.
+
+Anonymous access and public user registration are disabled.
+
+## Development Environment
 
 ### Application Server
 
 ```text
-IP: 192.168.100.87
-Role: Application Host
+Host: application-vm-01
+Private IP: 192.168.100.87
+Role: Application host
 ```
 
 ### Observability Server
 
 ```text
-IP: 192.168.100.88
-Role: Monitoring and Observability Host
+Host: observability-vm-01
+Private IP: 192.168.100.88
+Role: Monitoring and observability host
 ```
+
+The listed IP addresses belong only to the local VMware development environment.
+
+Production deployment will use private VPS networking or internal DNS names.
 
 ## Current Implementation Status
 
@@ -127,6 +192,16 @@ Role: Monitoring and Observability Host
 * Added `example.com` as a control target
 * Pinned container image versions
 
+### Day 04
+
+* Deployed Grafana with Docker Compose
+* Added persistent Grafana storage
+* Enabled authenticated access
+* Disabled anonymous access and public registration
+* Provisioned Prometheus as the default data source
+* Added a version-controlled Digikala dashboard
+* Added Docker Compose secrets for Grafana
+
 ## Repository Structure
 
 ```text
@@ -137,12 +212,40 @@ Role: Monitoring and Observability Host
 │   └── observability/
 │       └── compose.yaml
 ├── docs/
-│   └── day03.md
+│   ├── day03.md
+│   └── day04.md
+├── grafana/
+│   ├── dashboards/
+│   │   └── digikala-synthetic.json
+│   └── provisioning/
+│       ├── dashboards/
+│       │   └── dashboards.yml
+│       └── datasources/
+│           └── prometheus.yml
 ├── prometheus/
 │   └── prometheus.yml
 ├── .gitignore
 └── README.md
 ```
+
+The local `secrets/` directory is intentionally excluded from Git.
+
+## Security
+
+The current development environment includes the following security controls:
+
+* Grafana authentication enabled
+* Anonymous access disabled
+* Public user registration disabled
+* Grafana credentials stored outside Git
+* Grafana internal secret key stored outside Git
+* Secret files excluded through `.gitignore`
+* Provisioned configuration files mounted as read-only
+* Services deployed with pinned container image versions
+
+In the production VPS environment, Grafana will be placed behind an Nginx reverse proxy with HTTPS.
+
+Internal services such as Prometheus, Node Exporter, Elasticsearch, Tempo, and the OpenTelemetry Collector will not be exposed directly to the public internet.
 
 ## Project Status
 
@@ -150,14 +253,6 @@ Role: Monitoring and Observability Host
 Active Development
 ```
 
-This project is initially developed and tested on VMware virtual machines and will later be deployed to a secured, production-like VPS environment.
+The project is currently developed and tested on two VMware virtual machines.
 
-### Day 04
-
-- Deployed Grafana with Docker Compose
-- Added persistent Grafana storage
-- Enabled authenticated access
-- Disabled anonymous access and public registration
-- Provisioned Prometheus as the default data source
-- Added a version-controlled Digikala dashboard
-- Added Docker Compose secrets for Grafana
+After all monitoring, logging, tracing, alerting, security, and CI/CD components are completed, the platform will be deployed to a secured, production-like VPS environment.
