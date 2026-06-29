@@ -151,3 +151,13 @@ Active Development
 ```
 
 This project is initially developed and tested on VMware virtual machines and will later be deployed to a secured, production-like VPS environment.
+
+### Day 04
+
+- Deployed Grafana with Docker Compose
+- Added persistent Grafana storage
+- Enabled authenticated access
+- Disabled anonymous access and public registration
+- Provisioned Prometheus as the default data source
+- Added a version-controlled Digikala dashboard
+- Added Docker Compose secrets for Grafana
