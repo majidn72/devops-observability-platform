@@ -1,0 +1,18 @@
+groups:
+  - name: infrastructure-availability
+
+    rules:
+      - alert: MonitoringTargetDown
+
+        expr: up == 0
+
+        for: 3m
+
+        labels:
+          severity: critical
+          category: availability
+
+        annotations:
+          summary: "Monitoring target is unavailable"
+          description: "Prometheus has been unable to scrape {{ $labels.job }} at {{ $labels.instance }} for more than 3 minutes."
+          runbook_hint: "Check the target process, container status, network connectivity, and firewall rules."
