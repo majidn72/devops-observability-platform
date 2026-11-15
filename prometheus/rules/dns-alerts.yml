@@ -1,0 +1,12 @@
+groups:
+  - name: dns-availability
+    rules:
+      - alert: DNSResolutionFailed
+        expr: probe_success{job="blackbox-dns",target_name="bind-resolver"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          category: dns
+        annotations:
+          summary: "BIND DNS probe is failing"
+          description: "The {{ $labels.dns_transport }} DNS probe to {{ $labels.instance }} did not return the expected answer."

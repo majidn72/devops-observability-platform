@@ -1,0 +1,37 @@
+rule_files:
+  - ../rules/dns-alerts.yml
+
+evaluation_interval: 15s
+
+tests:
+  - name: udp failure fires and clears while tcp stays healthy
+    interval: 1m
+    input_series:
+      - series: 'probe_success{job="blackbox-dns",target_name="bind-resolver",dns_transport="udp",instance="192.168.100.76:53",environment="development"}'
+        values: '1 0 0 0 1'
+      - series: 'probe_success{job="blackbox-dns",target_name="bind-resolver",dns_transport="tcp",instance="192.168.100.76:53",environment="development"}'
+        values: '1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: DNSResolutionFailed
+        exp_alerts: []
+
+      - eval_time: 3m
+        alertname: DNSResolutionFailed
+        exp_alerts:
+          - exp_labels:
+              job: blackbox-dns
+              target_name: bind-resolver
+              dns_transport: udp
+              instance: "192.168.100.76:53"
+              environment: development
+              severity: warning
+              category: dns
+            exp_annotations:
+              summary: "BIND DNS probe is failing"
+              description: "The udp DNS probe to 192.168.100.76:53 did not return the expected answer."
+
+      - eval_time: 4m
+        alertname: DNSResolutionFailed
+        exp_alerts: []

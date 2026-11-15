@@ -9,3 +9,34 @@ modules:
       preferred_ip_protocol: ip4
       ip_protocol_fallback: false
       follow_redirects: true
+
+
+  dns_bind_udp:
+    prober: dns
+    timeout: 5s
+    dns:
+      transport_protocol: udp
+      preferred_ip_protocol: ip4
+      query_name: example.com
+      query_type: A
+      recursion_desired: true
+      valid_rcodes:
+        - NOERROR
+      validate_answer_rrs:
+        fail_if_none_matches_regexp:
+          - '^example\.com\.[[:space:]]+[0-9]+[[:space:]]+IN[[:space:]]+A[[:space:]]+'
+
+  dns_bind_tcp:
+    prober: dns
+    timeout: 5s
+    dns:
+      transport_protocol: tcp
+      preferred_ip_protocol: ip4
+      query_name: example.com
+      query_type: A
+      recursion_desired: true
+      valid_rcodes:
+        - NOERROR
+      validate_answer_rrs:
+        fail_if_none_matches_regexp:
+          - '^example\.com\.[[:space:]]+[0-9]+[[:space:]]+IN[[:space:]]+A[[:space:]]+'
