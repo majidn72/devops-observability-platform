@@ -145,3 +145,10 @@ scrape_configs:
 
       - target_label: __address__
         replacement: "blackbox-exporter:9115"
+
+  - job_name: "mini-devops-app"
+    metrics_path: /api/metrics
+    static_configs:
+      - targets: ["192.168.100.87:8080"]
+        labels:
+          environment: "test"

@@ -1,0 +1,20 @@
+---
+- name: Verify the Mini DevOps Platform from the monitoring host
+  hosts: "{{ env }}"
+  gather_facts: false
+
+  tasks:
+    - name: Check the frontend and Flask through Nginx
+      ansible.builtin.uri:
+        url: "http://{{ hostvars[inventory_hostname].ansible_host }}:{{ hostvars[inventory_hostname].app_http_port }}{{ item }}"
+        method: GET
+        status_code: 200
+        timeout: 5
+        use_proxy: false
+        follow_redirects: none
+      loop:
+        - /
+        - /api/health
+      delegate_to: localhost
+      tags:
+        - smoke
