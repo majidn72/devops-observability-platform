@@ -1,0 +1,21 @@
+---
+- name: Deploy the Mini DevOps Platform backend
+  hosts: "{{ env }}"
+  gather_facts: false
+  any_errors_fatal: true
+
+  tasks:
+    - name: Ensure the backend is running and healthy
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_project_dir }}"
+        files:
+          - docker-compose.yml
+        state: present
+        build: "{{ app_build | default('never') }}"
+        pull: never
+        wait: true
+        wait_timeout: 90
+      tags:
+        - deploy
+
+- ansible.builtin.import_playbook: smoke-app.yml
