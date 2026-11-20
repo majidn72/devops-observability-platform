@@ -1,11 +1,11 @@
 ---
-- name: Deploy the Mini DevOps Platform backend
+- name: Deploy the Mini DevOps Platform
   hosts: "{{ env }}"
   gather_facts: false
   any_errors_fatal: true
 
   tasks:
-    - name: Ensure the backend is running and healthy
+    - name: Ensure the existing app stack is running and healthy
       community.docker.docker_compose_v2:
         project_src: "{{ app_project_dir }}"
         files:
@@ -15,7 +15,45 @@
         pull: never
         wait: true
         wait_timeout: 90
+      when: app_backend_image is not defined
       tags:
         - deploy
+
+    - name: Deploy the tested registry image to the backend
+      when: app_backend_image is defined
+      tags:
+        - deploy
+      block:
+        - name: Pull the published image and update only the backend
+          community.docker.docker_compose_v2:
+            project_src: "{{ app_project_dir }}"
+            files:
+              - docker-compose.yml
+              - compose.registry.yml
+            services:
+              - backend
+            dependencies: false
+            state: present
+            build: never
+            pull: always
+            wait: true
+            wait_timeout: 90
+          environment:
+            APP_BACKEND_IMAGE: "{{ app_backend_image }}"
+
+        - name: Reload Nginx after replacing the backend
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - -f
+              - docker-compose.yml
+              - exec
+              - -T
+              - nginx
+              - nginx
+              - -s
+              - reload
+            chdir: "{{ app_project_dir }}"
 
 - ansible.builtin.import_playbook: smoke-app.yml
